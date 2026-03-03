@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111111">
   <meta name="color-scheme" content="dark">
-  <title>Путь</title>
+  <title>Мой комикс</title>
   <style>
     * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
     body {
@@ -40,6 +40,27 @@
       font-size: 14px;
       color: #aaa;
       text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #pageInput {
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 14px;
+      width: 50px;
+      text-align: center;
+      cursor: pointer;
+    }
+    #pageInput:focus {
+      outline: none;
+      border-color: #4a90e2;
+      background: #333;
     }
     .nav-btn {
       position: fixed;
@@ -101,7 +122,8 @@
     }
     .fullscreen-mode #info,
     .fullscreen-mode #loader,
-    .fullscreen-mode #fullscreenBtn {
+    .fullscreen-mode #fullscreenBtn,
+    .fullscreen-mode #pageInput {
       display: none !important;
     }
     .fullscreen-mode .nav-btn {
@@ -132,13 +154,95 @@
     @keyframes fadeOut {
       to { opacity: 0; }
     }
+    
+    /* Модальное окно для перехода */
+    #jumpModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    #jumpModal.show {
+      display: flex;
+    }
+    .jump-box {
+      background: #222;
+      padding: 20px 25px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 90%;
+      width: 300px;
+    }
+    .jump-box h3 {
+      margin: 0 0 15px;
+      font-size: 16px;
+      color: #fff;
+    }
+    .jump-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 18px;
+      border: 2px solid #444;
+      border-radius: 8px;
+      background: #333;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .jump-input:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+    .jump-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .jump-btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .jump-btn.go {
+      background: #4a90e2;
+      color: white;
+    }
+    .jump-btn.cancel {
+      background: #444;
+      color: white;
+    }
+    .jump-btn:hover { opacity: 0.9; }
+    .jump-error {
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+    .jump-error.show {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
 <div id="container">
   <img id="page" alt="Страница комикса">
-  <div id="info">Страница <span id="current">0</span> из <span id="total">209</span></div>
+  <div id="info">
+    Страница 
+    <input type="number" id="pageInput" min="0" max="208" value="0" title="Введите номер страницы">
+    из <span id="total">209</span>
+    <span id="jumpHint" style="font-size: 11px; color: #666; cursor: pointer;" title="Нажмите для перехода">↗</span>
+  </div>
 </div>
 <div id="loader">Загрузка...</div>
 
@@ -148,11 +252,24 @@
 
 <div id="fullscreenHint">Свайп вверх для выхода</div>
 
+<!-- Модальное окно для перехода -->
+<div id="jumpModal">
+  <div class="jump-box">
+    <h3>Перейти к странице</h3>
+    <input type="number" id="jumpInput" class="jump-input" min="0" max="208" placeholder="0–208">
+    <div id="jumpError" class="jump-error">Введите число от 0 до 208</div>
+    <div class="jump-buttons">
+      <button class="jump-btn cancel" id="jumpCancel">Отмена</button>
+      <button class="jump-btn go" id="jumpGo">Перейти</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // === НАСТРОЙКИ ===
 const TOTAL_PAGES = 209;
 const FOLDER = "pages/";
-const EXT = ".webp";  // ← ИЗМЕНЕНО: .jpg → .webp
+const EXT = ".webp";
 // =================
 
 let currentPage = 0;
@@ -166,8 +283,17 @@ const loader = document.getElementById("loader");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const fullscreenHint = document.getElementById("fullscreenHint");
 const container = document.getElementById("container");
+const pageInput = document.getElementById("pageInput");
+const jumpModal = document.getElementById("jumpModal");
+const jumpInput = document.getElementById("jumpInput");
+const jumpGo = document.getElementById("jumpGo");
+const jumpCancel = document.getElementById("jumpCancel");
+const jumpError = document.getElementById("jumpError");
+const jumpHint = document.getElementById("jumpHint");
 
 totalSpan.textContent = TOTAL_PAGES;
+pageInput.max = TOTAL_PAGES - 1;
+jumpInput.max = TOTAL_PAGES - 1;
 
 function pageName(num) {
   return String(num);
@@ -177,7 +303,7 @@ function showPage() {
   loader.style.display = "block";
   img.style.opacity = "0.5";
   img.src = FOLDER + pageName(currentPage) + EXT;
-  currentSpan.textContent = currentPage;
+  pageInput.value = currentPage;
   
   prevBtn.disabled = (currentPage === 0);
   nextBtn.disabled = (currentPage === TOTAL_PAGES - 1);
@@ -197,7 +323,82 @@ function prevPage() {
   }
 }
 
-// Вход в полноэкранный режим
+// === ПЕРЕХОД К СТРАНИЦЕ ===
+
+function openJumpModal() {
+  jumpInput.value = currentPage;
+  jumpError.classList.remove("show");
+  jumpModal.classList.add("show");
+  setTimeout(() => jumpInput.focus(), 100);
+}
+
+function closeJumpModal() {
+  jumpModal.classList.remove("show");
+}
+
+function goToPage() {
+  const value = parseInt(jumpInput.value, 10);
+  
+  if (isNaN(value) || value < 0 || value >= TOTAL_PAGES) {
+    jumpError.classList.add("show");
+    jumpInput.focus();
+    return;
+  }
+  
+  currentPage = value;
+  showPage();
+  closeJumpModal();
+}
+
+// Обработчики для модального окна
+jumpHint.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openJumpModal();
+});
+
+pageInput.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openJumpModal();
+});
+
+pageInput.addEventListener("change", (e) => {
+  const value = parseInt(e.target.value, 10);
+  if (!isNaN(value) && value >= 0 && value < TOTAL_PAGES) {
+    currentPage = value;
+    showPage();
+  } else {
+    e.target.value = currentPage;
+  }
+});
+
+jumpGo.addEventListener("click", (e) => {
+  e.stopPropagation();
+  goToPage();
+});
+
+jumpCancel.addEventListener("click", (e) => {
+  e.stopPropagation();
+  closeJumpModal();
+});
+
+jumpInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    goToPage();
+  }
+  if (e.key === "Escape") {
+    closeJumpModal();
+  }
+});
+
+jumpModal.addEventListener("click", (e) => {
+  if (e.target === jumpModal) {
+    closeJumpModal();
+  }
+});
+
+// === ПОЛНОЭКРАННЫЙ РЕЖИМ ===
+
 function enterFullscreen() {
   if (!isFullscreen) {
     isFullscreen = true;
@@ -215,7 +416,6 @@ function enterFullscreen() {
   }
 }
 
-// Выход из полноэкранного режима
 function exitFullscreen() {
   if (isFullscreen) {
     isFullscreen = false;
@@ -229,7 +429,6 @@ function exitFullscreen() {
   }
 }
 
-// Переключение полноэкранного режима
 function toggleFullscreen() {
   if (isFullscreen) {
     exitFullscreen();
@@ -250,7 +449,12 @@ img.addEventListener("load", () => {
 
 // Клик по экрану
 document.body.addEventListener("click", (e) => {
-  if (e.target.classList.contains("nav-btn") || e.target.id === "fullscreenBtn") return;
+  if (e.target.classList.contains("nav-btn") || 
+      e.target.id === "fullscreenBtn" ||
+      e.target.id === "jumpModal" ||
+      e.target.closest(".jump-box")) {
+    return;
+  }
   
   if (isFullscreen) return;
   
@@ -273,10 +477,13 @@ fullscreenBtn.addEventListener("click", (e) => {
 
 // Клавиатура
 document.addEventListener("keydown", (e) => {
+  if (jumpModal.classList.contains("show")) return;
+  
   if (e.key === "ArrowRight" || e.key === " " || e.key === "Enter") nextPage();
   if (e.key === "ArrowLeft") prevPage();
   if (e.key === "Escape" && isFullscreen) exitFullscreen();
   if (e.key === "f" || e.key === "F") toggleFullscreen();
+  if (e.key === "g" || e.key === "G") openJumpModal(); // G = Go to page
 });
 
 // Свайпы
@@ -284,11 +491,15 @@ let touchStartX = 0;
 let touchStartY = 0;
 
 document.addEventListener("touchstart", (e) => {
+  if (jumpModal.classList.contains("show")) return;
+  
   touchStartX = e.changedTouches[0].screenX;
   touchStartY = e.changedTouches[0].screenY;
 }, {passive: true});
 
 document.addEventListener("touchend", (e) => {
+  if (jumpModal.classList.contains("show")) return;
+  
   const touchEndX = e.changedTouches[0].screenX;
   const touchEndY = e.changedTouches[0].screenY;
   
@@ -324,6 +535,7 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
+// Инициализация
 showPage();
 </script>
 
