@@ -1,14 +1,10 @@
 // --- КОНФИГУРАЦИЯ ---
 const TOTAL_PAGES = 248;
 const IMG_FOLDER = 'images/';
-// Функция для генерации имени файла: Image1.jpg, Image2.jpg...
 const getImageSrc = (num) => `${IMG_FOLDER}Image${num}.jpg`;
 
 // --- СОСТОЯНИЕ ---
 let currentPage = 1;
-let isZoomed = false;
-let touchStartX = 0;
-let touchEndX = 0;
 
 // --- ЭЛЕМЕНТЫ DOM ---
 const coverScreen = document.getElementById('cover-screen');
@@ -22,10 +18,9 @@ const gotoInput = document.getElementById('goto-input');
 
 // --- ИНИЦИАЛИЗАЦИЯ ---
 
-// 1. Переход с обложки
+// Переход с обложки
 coverScreen.addEventListener('click', () => {
     coverScreen.classList.add('fade-out');
-    // Ждем окончания анимации (1s в CSS)
     setTimeout(() => {
         coverScreen.style.display = 'none';
         readerScreen.style.display = 'flex';
@@ -40,17 +35,10 @@ function loadPage(num) {
     if (num > TOTAL_PAGES) num = TOTAL_PAGES;
     
     currentPage = num;
-    
-    // Сбрасываем зум при смене страницы
-    exitZoom();
-
-    // Меняем источник
     pageImg.src = getImageSrc(currentPage);
-    
-    // Обновляем индикатор
     indicator.textContent = `${currentPage} / ${TOTAL_PAGES}`;
-
-    // Предзагрузка соседних страниц (оптимизация)
+    
+    // Предзагрузка
     preloadImage(currentPage + 1);
     preloadImage(currentPage - 1);
 }
@@ -63,49 +51,21 @@ function preloadImage(num) {
 }
 
 function nextPage() {
-    if (isZoomed) return; // Блокируем листание в зуме
     if (currentPage < TOTAL_PAGES) {
         loadPage(currentPage + 1);
     }
 }
 
 function prevPage() {
-    if (isZoomed) return;
     if (currentPage > 1) {
         loadPage(currentPage - 1);
     }
 }
 
-// --- ЗУМ (ZOOM) ---
-
-function toggleZoom() {
-    isZoomed = !isZoomed;
-    if (isZoomed) {
-        readerScreen.classList.add('zoomed');
-        // Здесь можно добавить логику масштабирования, если нужно больше 100%
-        // Но пока просто переключаем класс, который убирает object-fit: contain
-    } else {
-        exitZoom();
-    }
-}
-
-function exitZoom() {
-    isZoomed = false;
-    readerScreen.classList.remove('zoomed');
-}
-
-// Двойной клик по картинке
-pageImg.addEventListener('dblclick', (e) => {
-    e.stopPropagation(); // Чтобы не сработал клик по экрану
-    toggleZoom();
-});
-
 // --- НАВИГАЦИЯ (КЛАВИАТУРА) ---
-
 document.addEventListener('keydown', (e) => {
-    // Если открыт инпут, игнорируем стрелки
     if (gotoContainer.style.display === 'block') return;
-
+    
     if (e.key === 'ArrowRight' || e.key === ' ') {
         nextPage();
     } else if (e.key === 'ArrowLeft') {
@@ -113,17 +73,13 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// --- НАВИГАЦИЯ (КЛИК ПО ЭКРАНУ) ---
-// Разделяем экран на зоны. Левая часть - назад, правая - вперед.
-// Но только если не зум и не клик по UI.
-
+// --- НАВИГАЦИЯ (КЛИК) ---
 readerScreen.addEventListener('click', (e) => {
-    if (isZoomed) return; // В зуме клики не листают
     if (e.target.closest('#ui-controls') || e.target.closest('#goto-input-container')) return;
-
+    
     const width = window.innerWidth;
     const clickX = e.clientX;
-
+    
     if (clickX < width / 2) {
         prevPage();
     } else {
@@ -131,39 +87,38 @@ readerScreen.addEventListener('click', (e) => {
     }
 });
 
-// --- СВАЙПЫ (МОБИЛЬНЫЕ) ---
+// --- СВАЙПЫ ---
+let touchStartX = 0;
+let touchEndX = 0;
 
 readerScreen.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
 }, {passive: true});
 
 readerScreen.addEventListener('touchend', (e) => {
-    if (isZoomed) return;
     touchEndX = e.changedTouches[0].screenX;
     handleSwipe();
 }, {passive: true});
 
 function handleSwipe() {
-    const swipeThreshold = 50; // Минимальная длина свайпа
+    const swipeThreshold = 50;
     const diff = touchStartX - touchEndX;
-
+    
     if (Math.abs(diff) > swipeThreshold) {
         if (diff > 0) {
-            // Свайп влево -> Следующая страница
             nextPage();
         } else {
-            // Свайп вправо -> Предыдущая
             prevPage();
         }
     }
 }
 
-// --- ПЕРЕХОД НА СТРАНИЦУ (#) ---
-
+// --- ПЕРЕХОД НА СТРАНИЦУ ---
 btnGoto.addEventListener('click', () => {
     gotoContainer.style.display = 'block';
-    gotoInput.value = '';
+    gotoInput.value = currentPage;
     gotoInput.focus();
+    gotoInput.select();
 });
 
 gotoInput.addEventListener('keydown', (e) => {
@@ -172,8 +127,6 @@ gotoInput.addEventListener('keydown', (e) => {
         if (val >= 1 && val <= TOTAL_PAGES) {
             loadPage(val);
             gotoContainer.style.display = 'none';
-        } else {
-            alert(`Введите число от 1 до ${TOTAL_PAGES}`);
         }
     }
     if (e.key === 'Escape') {
@@ -181,7 +134,7 @@ gotoInput.addEventListener('keydown', (e) => {
     }
 });
 
-// Закрытие инпута при клике вне его
+// Закрытие инпута при клике вне
 document.addEventListener('click', (e) => {
     if (!gotoContainer.contains(e.target) && e.target !== btnGoto) {
         gotoContainer.style.display = 'none';
@@ -189,18 +142,16 @@ document.addEventListener('click', (e) => {
 });
 
 // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
-
 btnFullscreen.addEventListener('click', () => {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
-            console.log(`Ошибка включения fullscreen: ${err.message}`);
+            console.log(`Ошибка: ${err.message}`);
         });
     } else {
         document.exitFullscreen();
     }
 });
 
-// Отслеживание изменения режима fullscreen
 document.addEventListener('fullscreenchange', () => {
     if (document.fullscreenElement) {
         document.body.classList.add('fullscreen-active');
@@ -209,15 +160,15 @@ document.addEventListener('fullscreenchange', () => {
     }
 });
 
-// Сохранение прогресса (LocalStorage)
+// --- СОХРАНЕНИЕ ПРОГРЕССА ---
 window.addEventListener('beforeunload', () => {
     localStorage.setItem('comicPage', currentPage);
 });
 
-window.addEventListener('load', () => {
+// Загрузка сохраненной страницы при обновлении
+if (readerScreen.style.display === 'flex') {
     const savedPage = localStorage.getItem('comicPage');
-    if (savedPage && coverScreen.style.display === 'none') {
-        // Если мы уже в читалке (обновление страницы), грузим сохраненную
+    if (savedPage) {
         loadPage(parseInt(savedPage));
     }
-});
+}
