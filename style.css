@@ -1,0 +1,169 @@
+/* Сброс стилей */
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: 'Georgia', serif; /* Классический шрифт для комиксов/книг */
+    overflow: hidden; /* Убираем скролл браузера */
+    height: 100vh;
+    width: 100vw;
+}
+
+/* --- ОБЛОЖКА --- */
+#cover-screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: opacity 1s ease; /* Плавное растворение */
+    z-index: 10;
+    position: absolute;
+    top: 0; left: 0;
+}
+
+#cover-image {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+
+/* Класс для скрытия обложки */
+.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* --- ЧИТАЛКА --- */
+#reader-screen {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#page-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    /* Тень, о которой договаривались */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05); 
+    transition: transform 0.2s ease; /* Плавность для зума */
+    cursor: default;
+}
+
+/* Стили для режима ЗУМА */
+#reader-screen.zoomed #page-img {
+    cursor: grab;
+    /* В зуме убираем ограничения по размеру, чтобы видеть детали */
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    /* Начальный масштаб при зуме можно задать здесь, если нужно, 
+       но логика будет в JS */
+}
+
+#reader-screen.zoomed:active #page-img {
+    cursor: grabbing;
+}
+
+/* Скрываем UI в режиме зума и фуллскрина (опционально, но по ТЗ в зуме скрываем) */
+#reader-screen.zoomed #ui-controls,
+#reader-screen.zoomed #page-indicator {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* --- ИНТЕРФЕЙС (UI) --- */
+#ui-controls {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    pointer-events: auto;
+    z-index: 100;
+    transition: opacity 0.3s;
+}
+
+/* Кнопки */
+button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    color: #fff;
+}
+
+/* Индикатор страницы по центру */
+#page-indicator {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 1px;
+}
+
+/* Поле ввода (скрыто по умолчанию) */
+#goto-input-container {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 101;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+#goto-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #fff;
+    color: #fff;
+    font-size: 18px;
+    text-align: center;
+    width: 100px;
+    outline: none;
+    font-family: inherit;
+}
+
+/* Скрываем UI в полноэкранном режиме (через JS класс или нативный селектор) */
+/* Но по ТЗ: в полноэкранном режиме UI отсутствует. 
+   Мы будем скрывать его через JS при входе в fullscreen, 
+   либо можно использовать CSS :fullscreen, но поддержка разная.
+   Проще добавить класс .fullscreen-active к body или reader-screen */
+
+body.fullscreen-active #ui-controls,
+body.fullscreen-active #page-indicator {
+    display: none;
+}
+
+/* Адаптив для мобильных (убираем лишние отступы) */
+@media (max-width: 600px) {
+    #ui-controls {
+        padding: 0 20px;
+        bottom: 10px;
+    }
+    #page-indicator {
+        font-size: 12px;
+    }
+}
