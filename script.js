@@ -1,5 +1,5 @@
 // --- КОНФИГУРАЦИЯ ---
-const TOTAL_PAGES = 248;
+const TOTAL_PAGES = 247;
 const IMG_FOLDER = 'images/';
 const getImageSrc = (num) => `${IMG_FOLDER}Image${num}.jpg`;
 
