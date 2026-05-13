@@ -9,10 +9,13 @@ let currentPage = 1;
 // --- ЭЛЕМЕНТЫ DOM ---
 const coverScreen = document.getElementById('cover-screen');
 const readerScreen = document.getElementById('reader-screen');
+const feedbackScreen = document.getElementById('feedback-screen');
 const pageImg = document.getElementById('page-img');
 const indicator = document.getElementById('page-indicator');
 const btnGoto = document.getElementById('btn-goto');
 const btnFullscreen = document.getElementById('btn-fullscreen');
+const btnRestart = document.getElementById('btn-restart');
+const btnCloseFeedback = document.getElementById('btn-close-feedback');
 const gotoContainer = document.getElementById('goto-input-container');
 const gotoInput = document.getElementById('goto-input');
 
@@ -38,7 +41,6 @@ function loadPage(num) {
     pageImg.src = getImageSrc(currentPage);
     indicator.textContent = `${currentPage} / ${TOTAL_PAGES}`;
     
-    // Предзагрузка
     preloadImage(currentPage + 1);
     preloadImage(currentPage - 1);
 }
@@ -51,19 +53,32 @@ function preloadImage(num) {
 }
 
 function nextPage() {
+    if (feedbackScreen.style.display === 'flex') return;
+    
     if (currentPage < TOTAL_PAGES) {
         loadPage(currentPage + 1);
+    } else {
+        showFeedbackScreen();
     }
 }
 
 function prevPage() {
+    if (feedbackScreen.style.display === 'flex') return;
+    
     if (currentPage > 1) {
         loadPage(currentPage - 1);
     }
 }
 
+function showFeedbackScreen() {
+    readerScreen.style.display = 'none';
+    feedbackScreen.style.display = 'flex';
+    localStorage.setItem('comicPage', TOTAL_PAGES);
+}
+
 // --- НАВИГАЦИЯ (КЛАВИАТУРА) ---
 document.addEventListener('keydown', (e) => {
+    if (feedbackScreen.style.display === 'flex') return;
     if (gotoContainer.style.display === 'block') return;
     
     if (e.key === 'ArrowRight' || e.key === ' ') {
@@ -75,6 +90,7 @@ document.addEventListener('keydown', (e) => {
 
 // --- НАВИГАЦИЯ (КЛИК) ---
 readerScreen.addEventListener('click', (e) => {
+    if (feedbackScreen.style.display === 'flex') return;
     if (e.target.closest('#ui-controls') || e.target.closest('#goto-input-container')) return;
     
     const width = window.innerWidth;
@@ -92,10 +108,12 @@ let touchStartX = 0;
 let touchEndX = 0;
 
 readerScreen.addEventListener('touchstart', (e) => {
+    if (feedbackScreen.style.display === 'flex') return;
     touchStartX = e.changedTouches[0].screenX;
 }, {passive: true});
 
 readerScreen.addEventListener('touchend', (e) => {
+    if (feedbackScreen.style.display === 'flex') return;
     touchEndX = e.changedTouches[0].screenX;
     handleSwipe();
 }, {passive: true});
@@ -115,6 +133,8 @@ function handleSwipe() {
 
 // --- ПЕРЕХОД НА СТРАНИЦУ ---
 btnGoto.addEventListener('click', () => {
+    if (feedbackScreen.style.display === 'flex') return;
+    
     gotoContainer.style.display = 'block';
     gotoInput.value = currentPage;
     gotoInput.focus();
@@ -134,7 +154,6 @@ gotoInput.addEventListener('keydown', (e) => {
     }
 });
 
-// Закрытие инпута при клике вне
 document.addEventListener('click', (e) => {
     if (!gotoContainer.contains(e.target) && e.target !== btnGoto) {
         gotoContainer.style.display = 'none';
@@ -143,6 +162,8 @@ document.addEventListener('click', (e) => {
 
 // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
 btnFullscreen.addEventListener('click', () => {
+    if (feedbackScreen.style.display === 'flex') return;
+    
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
             console.log(`Ошибка: ${err.message}`);
@@ -160,12 +181,34 @@ document.addEventListener('fullscreenchange', () => {
     }
 });
 
-// --- СОХРАНЕНИЕ ПРОГРЕССА ---
-window.addEventListener('beforeunload', () => {
-    localStorage.setItem('comicPage', currentPage);
+// --- ОБРАТНАЯ СВЯЗЬ: КНОПКИ ---
+btnRestart.addEventListener('click', () => {
+    feedbackScreen.style.display = 'none';
+    coverScreen.classList.remove('fade-out');
+    coverScreen.style.display = 'flex';
+    readerScreen.style.display = 'none';
 });
 
-// Загрузка сохраненной страницы при обновлении
+btnCloseFeedback.addEventListener('click', () => {
+    feedbackScreen.style.display = 'none';
+    readerScreen.style.display = 'flex';
+    loadPage(TOTAL_PAGES);
+});
+
+feedbackScreen.addEventListener('click', (e) => {
+    if (e.target === feedbackScreen) {
+        btnCloseFeedback.click();
+    }
+});
+
+// --- СОХРАНЕНИЕ ПРОГРЕССА ---
+window.addEventListener('beforeunload', () => {
+    if (feedbackScreen.style.display !== 'flex') {
+        localStorage.setItem('comicPage', currentPage);
+    }
+});
+
+// Загрузка сохранённой страницы
 if (readerScreen.style.display === 'flex') {
     const savedPage = localStorage.getItem('comicPage');
     if (savedPage) {
