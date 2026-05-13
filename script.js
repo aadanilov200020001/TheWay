@@ -1,5 +1,6 @@
 // --- КОНФИГУРАЦИЯ ---
-const TOTAL_PAGES = 247;
+const TOTAL_IMAGES = 247; // Количество реальных страниц с картинками
+const TOTAL_PAGES = 248;  // Отображаемое в интерфейсе (включая финальный экран)
 const IMG_FOLDER = 'images/';
 const getImageSrc = (num) => `${IMG_FOLDER}Image${num}.jpg`;
 
@@ -20,8 +21,6 @@ const gotoContainer = document.getElementById('goto-input-container');
 const gotoInput = document.getElementById('goto-input');
 
 // --- ИНИЦИАЛИЗАЦИЯ ---
-
-// Переход с обложки
 coverScreen.addEventListener('click', () => {
     coverScreen.classList.add('fade-out');
     setTimeout(() => {
@@ -32,10 +31,9 @@ coverScreen.addEventListener('click', () => {
 });
 
 // --- ОСНОВНЫЕ ФУНКЦИИ ---
-
 function loadPage(num) {
     if (num < 1) num = 1;
-    if (num > TOTAL_PAGES) num = TOTAL_PAGES;
+    if (num > TOTAL_IMAGES) num = TOTAL_IMAGES;
     
     currentPage = num;
     pageImg.src = getImageSrc(currentPage);
@@ -46,7 +44,7 @@ function loadPage(num) {
 }
 
 function preloadImage(num) {
-    if (num > 0 && num <= TOTAL_PAGES) {
+    if (num > 0 && num <= TOTAL_IMAGES) {
         const img = new Image();
         img.src = getImageSrc(num);
     }
@@ -55,37 +53,30 @@ function preloadImage(num) {
 function nextPage() {
     if (feedbackScreen.style.display === 'flex') return;
     
-    if (currentPage < TOTAL_PAGES) {
+    if (currentPage < TOTAL_IMAGES) {
         loadPage(currentPage + 1);
     } else {
-        showFeedbackScreen();
+        showFeedbackScreen(); // Срабатывает при попытке уйти с 247-й
     }
 }
 
 function prevPage() {
     if (feedbackScreen.style.display === 'flex') return;
-    
-    if (currentPage > 1) {
-        loadPage(currentPage - 1);
-    }
+    if (currentPage > 1) loadPage(currentPage - 1);
 }
 
 function showFeedbackScreen() {
     readerScreen.style.display = 'none';
     feedbackScreen.style.display = 'flex';
-    localStorage.setItem('comicPage', TOTAL_PAGES);
+    localStorage.setItem('comicPage', TOTAL_IMAGES);
 }
 
 // --- НАВИГАЦИЯ (КЛАВИАТУРА) ---
 document.addEventListener('keydown', (e) => {
-    if (feedbackScreen.style.display === 'flex') return;
-    if (gotoContainer.style.display === 'block') return;
+    if (feedbackScreen.style.display === 'flex' || gotoContainer.style.display === 'block') return;
     
-    if (e.key === 'ArrowRight' || e.key === ' ') {
-        nextPage();
-    } else if (e.key === 'ArrowLeft') {
-        prevPage();
-    }
+    if (e.key === 'ArrowRight' || e.key === ' ') nextPage();
+    else if (e.key === 'ArrowLeft') prevPage();
 });
 
 // --- НАВИГАЦИЯ (КЛИК) ---
@@ -96,11 +87,8 @@ readerScreen.addEventListener('click', (e) => {
     const width = window.innerWidth;
     const clickX = e.clientX;
     
-    if (clickX < width / 2) {
-        prevPage();
-    } else {
-        nextPage();
-    }
+    if (clickX < width / 2) prevPage();
+    else nextPage();
 });
 
 // --- СВАЙПЫ ---
@@ -119,22 +107,17 @@ readerScreen.addEventListener('touchend', (e) => {
 }, {passive: true});
 
 function handleSwipe() {
-    const swipeThreshold = 50;
+    const threshold = 50;
     const diff = touchStartX - touchEndX;
-    
-    if (Math.abs(diff) > swipeThreshold) {
-        if (diff > 0) {
-            nextPage();
-        } else {
-            prevPage();
-        }
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0) nextPage();
+        else prevPage();
     }
 }
 
 // --- ПЕРЕХОД НА СТРАНИЦУ ---
 btnGoto.addEventListener('click', () => {
     if (feedbackScreen.style.display === 'flex') return;
-    
     gotoContainer.style.display = 'block';
     gotoInput.value = currentPage;
     gotoInput.focus();
@@ -144,14 +127,12 @@ btnGoto.addEventListener('click', () => {
 gotoInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         let val = parseInt(gotoInput.value);
-        if (val >= 1 && val <= TOTAL_PAGES) {
+        if (val >= 1 && val <= TOTAL_IMAGES) {
             loadPage(val);
             gotoContainer.style.display = 'none';
         }
     }
-    if (e.key === 'Escape') {
-        gotoContainer.style.display = 'none';
-    }
+    if (e.key === 'Escape') gotoContainer.style.display = 'none';
 });
 
 document.addEventListener('click', (e) => {
@@ -165,23 +146,18 @@ btnFullscreen.addEventListener('click', () => {
     if (feedbackScreen.style.display === 'flex') return;
     
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.log(`Ошибка: ${err.message}`);
-        });
+        document.documentElement.requestFullscreen().catch(err => console.log(`Ошибка: ${err.message}`));
     } else {
         document.exitFullscreen();
     }
 });
 
 document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement) {
-        document.body.classList.add('fullscreen-active');
-    } else {
-        document.body.classList.remove('fullscreen-active');
-    }
+    if (document.fullscreenElement) document.body.classList.add('fullscreen-active');
+    else document.body.classList.remove('fullscreen-active');
 });
 
-// --- ОБРАТНАЯ СВЯЗЬ: КНОПКИ ---
+// --- КНОПКИ ФИНАЛЬНОГО ЭКРАНА ---
 btnRestart.addEventListener('click', () => {
     feedbackScreen.style.display = 'none';
     coverScreen.classList.remove('fade-out');
@@ -192,13 +168,11 @@ btnRestart.addEventListener('click', () => {
 btnCloseFeedback.addEventListener('click', () => {
     feedbackScreen.style.display = 'none';
     readerScreen.style.display = 'flex';
-    loadPage(TOTAL_PAGES);
+    loadPage(TOTAL_IMAGES);
 });
 
 feedbackScreen.addEventListener('click', (e) => {
-    if (e.target === feedbackScreen) {
-        btnCloseFeedback.click();
-    }
+    if (e.target === feedbackScreen) btnCloseFeedback.click();
 });
 
 // --- СОХРАНЕНИЕ ПРОГРЕССА ---
@@ -208,10 +182,8 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Загрузка сохранённой страницы
+// Загрузка при старте
 if (readerScreen.style.display === 'flex') {
     const savedPage = localStorage.getItem('comicPage');
-    if (savedPage) {
-        loadPage(parseInt(savedPage));
-    }
+    if (savedPage) loadPage(parseInt(savedPage));
 }
