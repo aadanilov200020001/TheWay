@@ -15,41 +15,33 @@
 
     <!-- ЭКРАН ЧИТАЛКИ (скрыт по умолчанию) -->
     <div id="reader-screen" style="display: none;">
-        
-        <!-- Изображение страницы -->
         <img id="page-img" src="" alt="Page">
 
-        <!-- Интерфейс (нижняя панель) -->
         <div id="ui-controls">
             <button id="btn-goto" title="Перейти на страницу">#</button>
-            <div id="page-indicator">1 / 247</div>
+            <div id="page-indicator">1 / 248</div>
             <button id="btn-fullscreen" title="Полноэкранный режим">⛶</button>
         </div>
 
-        <!-- Скрытое поле ввода для перехода -->
         <div id="goto-input-container" style="display: none;">
             <input type="number" id="goto-input" min="1" max="247" placeholder="№ страницы">
         </div>
-
     </div>
 
     <!-- ЭКРАН ОБРАТНОЙ СВЯЗИ (скрыт по умолчанию) -->
     <div id="feedback-screen" style="display: none;">
         <div class="feedback-content">
-            <h2>Вы дочитали до конца! 🎉</h2>
+            <h2>Конец</h2>
             <p class="feedback-text">
-                            Ваше мнение важно — помогите сделать проект лучше.
+                Спасибо, что прошли этот путь.<br>
+                Буду рад вашей обратной связи и поддержке.
             </p>
             <div class="feedback-links">
-                <a href="https://t.me/no1nameman1on" target="_blank" class="feedback-link tg">
-                    <span class="link-icon">✈️</span> Telegram
-                </a>
-                <a href="https://vk.com/id578550481" target="_blank" class="feedback-link vk">
-                    <span class="link-icon">💙</span> ВКонтакте
-                </a>
+                <a href="https://t.me/aadanilov200020001" target="_blank" class="feedback-link">Telegram</a>
+                <a href="https://vk.com/aadanilov200020001" target="_blank" class="feedback-link">ВКонтакте</a>
             </div>
-            <button id="btn-restart" class="feedback-btn">🔄 Начать сначала</button>
-            <button id="btn-close-feedback" class="feedback-btn">✕ Остаться на последней странице</button>
+            <button id="btn-restart" class="feedback-btn">Начать сначала</button>
+            <button id="btn-close-feedback" class="feedback-btn">Вернуться к чтению</button>
         </div>
     </div>
 
